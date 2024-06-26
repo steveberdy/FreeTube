@@ -12,6 +12,7 @@ import {
   deepCopy
 } from '../../helpers/utils'
 import { deArrowData, deArrowThumbnail } from '../../helpers/sponsorblock'
+import { invidiousGetVideoInformation } from '../../helpers/api/invidious'
 import debounce from 'lodash.debounce'
 
 export default defineComponent({
@@ -229,7 +230,7 @@ export default defineComponent({
       return (this.watchProgress / this.lengthSeconds) * 100
     },
 
-    hideSharingActions: function() {
+    hideSharingActions: function () {
       return this.$store.getters.getHideSharingActions
     },
 
@@ -525,7 +526,7 @@ export default defineComponent({
     }
   },
   methods: {
-    fetchDeArrowThumbnail: async function() {
+    fetchDeArrowThumbnail: async function () {
       if (this.thumbnailPreference === 'hidden') { return }
       const videoId = this.id
       const thumbnail = await deArrowThumbnail(videoId, this.deArrowCache.thumbnailTimestamp)
@@ -535,7 +536,7 @@ export default defineComponent({
         this.$store.commit('addThumbnailToDeArrowCache', deArrowCacheClone)
       }
     },
-    fetchDeArrowData: async function() {
+    fetchDeArrowData: async function () {
       const videoId = this.id
       const data = await deArrowData(this.id)
       const cacheData = { videoId, title: null, videoDuration: null, thumbnail: null, thumbnailTimestamp: null }
@@ -591,6 +592,42 @@ export default defineComponent({
 
       if (this.saveWatchedProgress && !this.historyEntryExists) {
         this.markAsWatched()
+      }
+    },
+
+    grabExtensionFromUrl: function (url) {
+      const regex = /\/(\w*)/i
+      const group = url.match(regex)
+      if (group.length === 0) {
+        return ''
+      }
+      return group[1]
+    },
+
+    handleDownload: async function () {
+      const result = await invidiousGetVideoInformation(this.id)
+      const videoFormats = result.adaptiveFormats
+        .concat(result.formatStreams.reverse())
+        .map(f => ({ ...f, bitrate: parseInt(f.bitrate) }))
+        .filter(format => format.type.includes('video'))
+
+      let highestFormat = videoFormats[0]
+      for (let index = 1; index < videoFormats.length; index++) {
+        if (videoFormats[index].bitrate <= highestFormat.bitrate) {
+          continue
+        }
+        highestFormat = videoFormats[index]
+      }
+
+      const downloadBehavior = this.$store.getters.getDownloadBehavior
+      if (downloadBehavior !== 'open') {
+        openExternalLink(highestFormat.url)
+      } else {
+        this.downloadMedia({
+          url: highestFormat.url,
+          title: this.title,
+          extension: this.grabExtensionFromUrl(highestFormat.type)
+        })
       }
     },
 
@@ -749,7 +786,7 @@ export default defineComponent({
       }
     },
 
-    hideChannel: function(channelName, channelId) {
+    hideChannel: function (channelName, channelId) {
       const hiddenChannels = JSON.parse(this.$store.getters.getChannelsHidden)
       hiddenChannels.push({ name: channelId, preferredName: channelName })
       this.updateChannelsHidden(JSON.stringify(hiddenChannels))
@@ -757,7 +794,7 @@ export default defineComponent({
       showToast(this.$t('Channel Hidden', { channel: channelName }))
     },
 
-    unhideChannel: function(channelName, channelId) {
+    unhideChannel: function (channelName, channelId) {
       const hiddenChannels = JSON.parse(this.$store.getters.getChannelsHidden)
       this.updateChannelsHidden(JSON.stringify(hiddenChannels.filter(c => c.name !== channelId)))
 
@@ -807,20 +844,21 @@ export default defineComponent({
       // TODO: Maybe show playlist name
       showToast(this.$t('Video.Video has been removed from your saved list'))
     },
-    moveVideoUp: function() {
+    moveVideoUp: function () {
       this.$emit('move-video-up')
     },
 
-    moveVideoDown: function() {
+    moveVideoDown: function () {
       this.$emit('move-video-down')
     },
 
-    removeFromPlaylist: function() {
+    removeFromPlaylist: function () {
       this.$emit('remove-from-playlist')
     },
 
     ...mapActions([
       'openInExternalPlayer',
+      'downloadMedia',
       'updateHistory',
       'removeFromHistory',
       'updateChannelsHidden',

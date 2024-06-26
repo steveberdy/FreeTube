@@ -166,17 +166,28 @@
           {{ $t('Search Listing.Label.Subtitles') }}
         </div>
       </div>
-      <ft-icon-button
-        class="optionsButton"
-        :icon="['fas', 'ellipsis-v']"
-        :title="$t('Video.More Options')"
-        theme="base-no-default"
-        :size="16"
-        :use-shadow="false"
-        dropdown-position-x="left"
-        :dropdown-options="dropdownOptions"
-        @click="handleOptionsClick"
-      />
+      <div>
+        <ft-icon-button
+          class="optionsButton"
+          :icon="['fas', 'ellipsis-v']"
+          :title="$t('Video.More Options')"
+          theme="base-no-default"
+          :size="16"
+          :use-shadow="false"
+          dropdown-position-x="left"
+          :dropdown-options="dropdownOptions"
+          @click="handleOptionsClick"
+        />
+        <ft-icon-button
+          ref="downloadButton"
+          :title="$t('Video.Download Video')"
+          class="optionsButton"
+          theme="base"
+          :icon="['fas', 'download']"
+          :return-index="true"
+          @click="handleDownload"
+        />
+      </div>
       <p
         v-if="description && effectiveListTypeIsList && appearance === 'result'"
         class="description"
