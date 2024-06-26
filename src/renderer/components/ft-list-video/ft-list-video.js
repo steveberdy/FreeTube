@@ -609,7 +609,7 @@ export default defineComponent({
       const videoFormats = result.adaptiveFormats
         .concat(result.formatStreams.reverse())
         .map(f => ({ ...f, bitrate: parseInt(f.bitrate) }))
-        .filter(format => format.type.includes('video'))
+        .filter(format => format.type.includes('video') && format.type.includes('mp4'))
 
       let highestFormat = videoFormats[0]
       for (let index = 1; index < videoFormats.length; index++) {
@@ -620,7 +620,7 @@ export default defineComponent({
       }
 
       const downloadBehavior = this.$store.getters.getDownloadBehavior
-      if (downloadBehavior !== 'open') {
+      if (downloadBehavior === 'open') {
         openExternalLink(highestFormat.url)
       } else {
         this.downloadMedia({
