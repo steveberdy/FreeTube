@@ -608,8 +608,8 @@ export default defineComponent({
       const result = await invidiousGetVideoInformation(this.id)
       const videoFormats = result.adaptiveFormats
         .concat(result.formatStreams.reverse())
-        .map(f => ({ ...f, bitrate: parseInt(f.bitrate) }))
-        .filter(format => format.type.includes('video') && format.type.includes('mp4'))
+        .filter(format => ['18', '22'].includes(format.itag) &&
+          format.type.includes('video') && format.type.includes('mp4'))
 
       let highestFormat = videoFormats[0]
       for (let index = 1; index < videoFormats.length; index++) {
